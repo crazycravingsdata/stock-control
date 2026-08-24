@@ -93,14 +93,33 @@
   nav.tabs button.active{background:var(--strawberry); color:#fff;}
   nav.tabs button:hover:not(.active){background:#F5EFE4;}
 
+  @media(max-width:680px){
+    header.topbar{flex-wrap:wrap; padding:10px 14px; gap:8px; row-gap:10px;}
+    header.topbar .brand{order:1; flex:1; font-size:16px;}
+    header.topbar .brand img{width:32px; height:32px;}
+    header.topbar > .btn{order:2;}
+    header.topbar nav.tabs{
+      order:3; flex-basis:100%; flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      gap:8px; padding-bottom:2px; margin:0 -14px; padding-left:14px; padding-right:14px;
+    }
+    header.topbar nav.tabs::-webkit-scrollbar{display:none;}
+    header.topbar nav.tabs button{white-space:nowrap; flex:0 0 auto; padding:8px 14px; font-size:13px;}
+  }
+
   main{max-width:1180px; margin:0 auto; padding:26px 20px 70px;}
+  @media(max-width:680px){ main{padding:18px 14px 60px;} }
   .view{display:none;}
   .view.active{display:block; animation:fadeIn .25s ease;}
   @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
 
   .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; border:1px solid var(--line);}
   .card + .card{margin-top:20px;}
-  .card h2{font-size:18px; margin:0 0 18px; display:flex; align-items:center; gap:8px;}
+  .card h2{font-size:18px; margin:0 0 18px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  @media(max-width:680px){
+    .card{padding:16px; border-radius:16px;}
+    .card + .card{margin-top:14px;}
+    .card h2{font-size:16px; margin-bottom:14px;}
+  }
 
   .grid{display:grid; gap:14px;}
   .grid-2{grid-template-columns:1fr 1fr;}
@@ -116,14 +135,28 @@
   input:focus,select:focus{border-color:var(--strawberry);}
   input:disabled{background:#F5EFE4; color:var(--choc-soft); cursor:not-allowed;}
   .field{margin-bottom:14px;}
+  @media(max-width:680px){
+    input,select{padding:11px 12px; font-size:16px;}
+    .btn{width:100%; text-align:center;}
+    .btn.btn-sm{width:auto;}
+  }
 
   table{width:100%; border-collapse:collapse; font-size:13.5px;}
-  th{text-align:left; padding:9px 10px; color:var(--choc-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; border-bottom:2px solid var(--line);}
+  th{text-align:left; padding:9px 10px; color:var(--choc-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; border-bottom:2px solid var(--line); white-space:nowrap;}
   td{padding:10px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
   tr:last-child td{border-bottom:none;}
-  .table-wrap{overflow-x:auto;}
+  .table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  @media(max-width:680px){
+    table{font-size:12.5px;}
+    th,td{padding:8px 8px;}
+  }
 
   .itens-table input, .itens-table select{padding:8px 9px; font-size:13.5px;}
+  .form-actions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;}
+  @media(max-width:680px){
+    .form-actions{flex-direction:column-reverse;}
+    .form-actions .btn{width:100%;}
+  }
   .subtotal-cell{font-weight:600; white-space:nowrap;}
   .remove-row{color:var(--danger); background:transparent; font-size:18px; padding:4px 8px; border-radius:8px;}
   .remove-row:hover{background:#FDF0F0;}
@@ -137,6 +170,7 @@
 
   .kpi-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;}
   @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:420px){.kpi-grid{grid-template-columns:1fr; gap:10px;}}
   .kpi{background:var(--card); border-radius:14px; padding:18px 20px; border:1px solid var(--line); box-shadow:var(--shadow);}
   .kpi .kpi-label{font-size:12px; color:var(--choc-soft); font-weight:600; margin-bottom:6px;}
   .kpi .kpi-value{font-size:23px; font-weight:700;}
@@ -202,7 +236,14 @@
   /* ---------- QUICK STOCK ---------- */
   .quick-stock-header{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
   .quick-stock-search{max-width:220px; border-radius:999px; padding:10px 16px;}
-  .quick-stock-hint{color:var(--choc-soft); font-size:13px; margin:2px 0 20px;}
+  .quick-stock-hint{color:var(--choc-soft); font-size:13px; margin:2px 0 16px;}
+  .brand-filter-bar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px;}
+  .brand-pill{
+    background:#F5EFE4; color:var(--choc-soft); border:none; border-radius:999px;
+    padding:8px 16px; font-size:13px; font-weight:600; transition:background .15s, color .15s;
+  }
+  .brand-pill.active{background:var(--strawberry); color:#fff;}
+  .brand-pill:hover:not(.active){background:#EBE0CE;}
   .stock-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:14px;}
   @media(max-width:520px){.stock-grid{grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;}}
   .stock-tile{
@@ -211,7 +252,12 @@
     user-select:none; min-width:0;
   }
   .stock-tile.level-low{border-color:#F0B7C4; background:#FFF6F7;}
+  .stock-tile.level-critical{border-color:#F0923B; background:#FFF3E8; animation:criticalPulse 1.8s ease-in-out infinite;}
   .stock-tile.level-out{border-color:var(--danger); background:#FDEDED;}
+  @keyframes criticalPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(240,146,59,0.35);}
+    50%{box-shadow:0 0 0 6px rgba(240,146,59,0);}
+  }
   .stock-tile-top{display:flex; flex-direction:column; gap:2px; min-width:0;}
   .stock-tile-name{font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; line-height:1.2; overflow-wrap:break-word;}
   .stock-tile-brand{font-size:11.5px; color:var(--choc-soft); text-transform:uppercase; letter-spacing:.02em; overflow-wrap:break-word;}
@@ -221,6 +267,7 @@
   .level-out .stock-dot{background:var(--danger);}
   .stock-more{font-size:11.5px; color:var(--choc-soft); align-self:center; font-weight:600;}
   .stock-empty-label{font-size:12px; color:var(--danger); font-weight:600;}
+  .stock-empty-label.critical{color:#D9761B;}
   .stock-controls{display:flex; align-items:center; justify-content:space-between; margin-top:auto; gap:6px;}
   .stock-btn{
     width:46px; height:46px; border-radius:50%; font-size:22px; font-weight:700;
@@ -329,7 +376,7 @@
           <div id="matchIndicator" style="min-width:140px;"></div>
         </div>
 
-        <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
+        <div class="form-actions" style="margin-top:20px;">
           <button class="btn btn-ghost" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">Cancel edit</button>
           <button class="btn btn-primary" onclick="salvarNota()">💾 Save Purchase</button>
         </div>
@@ -365,6 +412,7 @@
           <input type="text" id="quickStockSearch" class="quick-stock-search" placeholder="🔍 Search flavour…" oninput="renderQuickStock()">
         </div>
         <p class="quick-stock-hint">Tap <strong>−</strong> when a tub leaves the freezer. Tap <strong>+</strong> to correct.</p>
+        <div class="brand-filter-bar" id="brandFilterBar"></div>
         <div class="stock-grid" id="quickStockGrid"></div>
         <div class="empty-state" id="quickStockEmpty" style="display:none;">
           <div class="icon">🍨</div>
@@ -523,6 +571,7 @@ let sabores = [];      // {id, nome, marca, estoqueMinimo}
 let notas = [];         // {id, marcaSorvete, data, valorNota, itens:[{saborId,saborNome,marca,quantidade,precoUnitario,subtotal}], totalCalculado, totalPotes}
 let saidas = [];         // {id, saborId, saborNome, marca, tipo:'out'|'in', quantidade, data} — quick +/- stock taps
 let editingNotaId = null;
+let quickStockBrandFilter = '';
 let chartInstance = null;
 
 /* ================= CUSTOM DATE PICKER (always English/Canadian format, regardless of OS locale) ================= */
@@ -825,19 +874,26 @@ function adjustStock(saborId, delta){
   const row = stockMap[saborId];
   const atual = row ? Math.max(0, row.comprados - row.removidos) : 0;
   if(delta < 0 && atual <= 0) return;
+  const novoValor = Math.max(0, atual + delta);
 
   // optimistic UI feedback so it feels instant on mobile
   const tile = document.querySelector(`.stock-tile[data-sabor="${saborId}"]`);
   if(tile){
     const countEl = tile.querySelector('.stock-count');
     if(countEl){
-      countEl.textContent = Math.max(0, atual + delta);
+      countEl.textContent = novoValor;
       countEl.classList.add('bump');
       setTimeout(() => countEl.classList.remove('bump'), 150);
     }
   }
 
   const sabor = sabores.find(s => s.id === saborId);
+  const nome = sabor ? sabor.nome : 'Flavour';
+  if(delta < 0){
+    if(novoValor === 0) showToast(`🚫 ${nome} is out of stock!`, true);
+    else if(novoValor === 1) showToast(`⚠️ Only 1 ${nome} left!`, true);
+  }
+
   db.collection('saidas').add({
     saborId,
     saborNome: sabor ? sabor.nome : '',
@@ -848,12 +904,29 @@ function adjustStock(saborId, delta){
     createdAt: Date.now()
   }).catch(err => showToast('Error: '+err.message, true));
 }
+function setBrandFilter(marca){
+  quickStockBrandFilter = marca;
+  renderQuickStock();
+}
+function renderBrandFilterBar(marcasDisponiveis){
+  const bar = document.getElementById('brandFilterBar');
+  if(!bar) return;
+  if(marcasDisponiveis.length === 0){ bar.innerHTML = ''; return; }
+  const pills = ['', ...marcasDisponiveis];
+  bar.innerHTML = pills.map(m => `
+    <button type="button" class="brand-pill ${quickStockBrandFilter===m?'active':''}" onclick="setBrandFilter('${escapeJs(m)}')">${m===''?'All':escapeHtml(m)}</button>
+  `).join('');
+}
 function renderQuickStock(){
   const grid = document.getElementById('quickStockGrid');
   const empty = document.getElementById('quickStockEmpty');
   if(!grid) return;
-  if(sabores.length === 0){ grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  if(sabores.length === 0){ grid.innerHTML = ''; empty.style.display = 'block'; renderBrandFilterBar([]); return; }
   empty.style.display = 'none';
+
+  const marcasDisponiveis = [...new Set(sabores.map(s => s.marca).filter(Boolean))].sort();
+  renderBrandFilterBar(marcasDisponiveis);
+  if(quickStockBrandFilter && !marcasDisponiveis.includes(quickStockBrandFilter)) quickStockBrandFilter = '';
 
   const search = (document.getElementById('quickStockSearch').value || '').toLowerCase().trim();
   const stockMap = computeCurrentStock();
@@ -861,17 +934,28 @@ function renderQuickStock(){
     const st = stockMap[s.id] || { comprados: 0, removidos: 0 };
     return { id: s.id, nome: s.nome, marca: s.marca||'', minimo: s.estoqueMinimo || 0, atual: Math.max(0, st.comprados - st.removidos) };
   });
+  if(quickStockBrandFilter) list = list.filter(x => x.marca === quickStockBrandFilter);
   if(search) list = list.filter(x => x.nome.toLowerCase().includes(search) || x.marca.toLowerCase().includes(search));
   list.sort((a,b) => a.nome.localeCompare(b.nome));
+
+  if(list.length === 0){
+    grid.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
 
   grid.innerHTML = list.map(x => {
     let level = 'ok';
     if(x.atual <= 0) level = 'out';
+    else if(x.atual === 1) level = 'critical';
     else if(x.minimo > 0 && x.atual <= x.minimo) level = 'low';
     const dotCount = Math.min(x.atual, 20);
     const dots = Array.from({length: dotCount}).map(() => `<span class="stock-dot"></span>`).join('');
     const more = x.atual > 20 ? `<span class="stock-more">+${x.atual-20}</span>` : '';
-    const dotsHtml = x.atual > 0 ? (dots + more) : `<span class="stock-empty-label">Out of stock</span>`;
+    let dotsHtml;
+    if(x.atual === 0) dotsHtml = `<span class="stock-empty-label">Out of stock</span>`;
+    else if(x.atual === 1) dotsHtml = `<span class="stock-empty-label critical">⚠️ Last one!</span>`;
+    else dotsHtml = dots + more;
     return `
       <div class="stock-tile level-${level}" data-sabor="${x.id}">
         <div class="stock-tile-top">
@@ -915,15 +999,19 @@ function renderLowStockAlert(){
   if(!card || !list) return;
   const map = computeCurrentStock();
   const low = Object.values(map)
-    .filter(r => r.estoqueMinimo > 0 && (r.comprados - r.removidos) <= r.estoqueMinimo)
-    .sort((a,b) => (a.comprados-a.removidos) - (b.comprados-b.removidos));
+    .map(r => ({...r, atual: r.comprados - r.removidos}))
+    .filter(r => r.comprados > 0 && (r.atual <= 1 || (r.estoqueMinimo > 0 && r.atual <= r.estoqueMinimo)))
+    .sort((a,b) => a.atual - b.atual);
   if(low.length === 0){ card.style.display = 'none'; list.innerHTML = ''; return; }
   card.style.display = 'block';
-  list.innerHTML = low.map(r => `
-    <div class="flavor-chip" style="background:#fff; border-color:#F3D3D3;">
-      <div><div class="fname">${escapeHtml(r.nome)}</div><div class="fbrand">${(r.comprados-r.removidos)} in stock (min ${r.estoqueMinimo})</div></div>
+  list.innerHTML = low.map(r => {
+    const critical = r.atual <= 1;
+    const label = r.atual <= 0 ? 'Out of stock' : (r.atual === 1 ? '⚠️ Only 1 left!' : `${r.atual} in stock (min ${r.estoqueMinimo})`);
+    return `
+    <div class="flavor-chip" style="background:#fff; border-color:${critical ? '#F0923B' : '#F3D3D3'};">
+      <div><div class="fname">${escapeHtml(r.nome)}</div><div class="fbrand" style="${critical ? 'color:#D9761B; font-weight:600;' : ''}">${label}</div></div>
     </div>
-  `).join('');
+  `;}).join('');
 }
 
 /* ================= ITEMS (NEW INVOICE) ================= */
@@ -1221,6 +1309,10 @@ function renderDashboard(){
 function escapeHtml(str){
   if(str === undefined || str === null) return '';
   return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeJs(str){
+  if(str === undefined || str === null) return '';
+  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 </script>
 </body>
