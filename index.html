@@ -145,9 +145,23 @@
   }
   input:focus,select:focus{border-color:var(--strawberry);}
   input:disabled{background:#F5EFE4; color:var(--choc-soft); cursor:not-allowed;}
+  select{
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%236B5A50' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+    background-size:12px 8px;
+    padding-right:38px;
+    height:44px;
+    line-height:1.2;
+    cursor:pointer;
+  }
+  select:disabled{cursor:not-allowed; opacity:.6;}
+  .itens-table select{height:38px; padding-right:32px; background-position:right 10px center;}
   .field{margin-bottom:14px;}
   @media(max-width:680px){
     input,select{padding:11px 12px; font-size:16px;}
+    select{padding-right:38px; height:46px;}
     .btn{width:100%; text-align:center;}
     .btn.btn-sm{width:auto;}
   }
@@ -163,6 +177,12 @@
   }
 
   .itens-table input, .itens-table select{padding:8px 9px; font-size:13.5px;}
+  .itens-table select{padding-right:30px;}
+  .checkbox-field{margin-top:18px; padding:14px 16px; background:#F9F4EA; border-radius:14px; border:1px solid var(--line);}
+  .checkbox-label{display:flex; align-items:center; gap:10px; font-weight:600; font-size:13.5px; cursor:pointer; color:var(--choc);}
+  .checkbox-label input[type="checkbox"]{width:19px; height:19px; flex:0 0 auto; accent-color:var(--strawberry); cursor:pointer;}
+  .checkbox-hint{font-size:12px; color:var(--choc-soft); margin:6px 0 0 29px; line-height:1.4;}
+  @media(max-width:480px){ .checkbox-hint{margin-left:0;} }
   .form-actions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;}
   @media(max-width:680px){
     .form-actions{flex-direction:column-reverse;}
@@ -289,6 +309,22 @@
     .order-row{grid-template-columns:1fr 70px 84px 30px; padding:10px 10px; gap:6px;}
     .order-group-actions{width:100%;}
     .order-group-actions .btn{flex:1;}
+  }
+
+  .saved-order-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:14px 16px; border:1px solid var(--line); border-radius:14px; margin-bottom:10px; flex-wrap:wrap;
+  }
+  .saved-order-row.editing{border-color:var(--strawberry); background:#FFF6F7;}
+  .saved-order-info{min-width:0;}
+  .sorder-label{font-weight:600; font-size:13.5px; font-family:'Fredoka',sans-serif;}
+  .sorder-meta{font-size:11.5px; color:var(--choc-soft); margin-top:2px;}
+  .saved-order-actions{display:flex; gap:8px; flex-wrap:wrap;}
+  .saved-order-actions .btn{padding:7px 14px; font-size:12.5px;}
+  @media(max-width:480px){
+    .saved-order-row{flex-direction:column; align-items:stretch;}
+    .saved-order-actions{width:100%;}
+    .saved-order-actions .btn{flex:1;}
   }
   .stock-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(160px,1fr)); gap:14px;}
   @media(max-width:520px){.stock-grid{grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;}}
@@ -429,6 +465,14 @@
           <div id="matchIndicator" style="min-width:140px;"></div>
         </div>
 
+        <div class="checkbox-field">
+          <label class="checkbox-label">
+            <input type="checkbox" id="fContabilizarEstoque" checked>
+            <span>Add these tubs to Stock automatically</span>
+          </label>
+          <div class="checkbox-hint">Uncheck this if you already adjusted the Stock count manually for this delivery (e.g. after a physical recount) — this keeps the purchase on record without counting the tubs twice.</div>
+        </div>
+
         <div class="form-actions" style="margin-top:20px;">
           <button class="btn btn-ghost" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">Cancel edit</button>
           <button class="btn btn-primary" onclick="salvarNota()">💾 Save Purchase</button>
@@ -478,10 +522,10 @@
     <div class="view" id="viewNewOrder">
       <div class="card">
         <div class="quick-stock-header">
-          <h2 style="margin:0;">🛒 New Order</h2>
+          <h2 id="orderCardTitle" style="margin:0;">🛒 New Order</h2>
           <button class="btn btn-secondary btn-sm" onclick="prefillOrderFromLowStock()">↻ Refill from Low Stock</button>
         </div>
-        <p class="quick-stock-hint">Suggested items are flavours running low or out. Adjust quantities, add more if needed — each supplier gets its own PDF/WhatsApp buttons below, since orders are placed separately.</p>
+        <p class="quick-stock-hint">Suggested items are flavours running low or out (2 tubs or fewer). Fill in the quantities yourself, add more if needed — each supplier gets its own PDF/WhatsApp buttons below, since orders are placed separately.</p>
 
         <div class="field" style="max-width:340px;">
           <label>Add a flavour to the order</label>
@@ -497,7 +541,17 @@
         </div>
 
         <div class="form-actions" style="margin-top:20px;">
-          <button class="btn btn-ghost" onclick="clearOrder()">Clear list</button>
+          <button class="btn btn-ghost" onclick="clearOrder()">New list</button>
+          <button class="btn btn-primary" id="savePedidoBtn" onclick="salvarPedido()">💾 Save List</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📚 Saved Purchase Lists</h2>
+        <div id="savedOrdersList"></div>
+        <div class="empty-state" id="savedOrdersEmpty" style="display:none;">
+          <div class="icon">📚</div>
+          <div>No saved lists yet. Save a list above to see it here.</div>
         </div>
       </div>
     </div>
@@ -654,6 +708,8 @@ let saidas = [];         // {id, saborId, saborNome, marca, tipo:'out'|'in', qua
 let editingNotaId = null;
 let quickStockBrandFilter = '';
 let orderItems = {};
+let editingPedidoId = null;
+let pedidosSalvos = [];
 let chartInstance = null;
 
 /* ================= CUSTOM DATE PICKER (always English/Canadian format, regardless of OS locale) ================= */
@@ -832,6 +888,8 @@ function switchView(viewId){
     renderOrderAddSelect();
     if(Object.keys(orderItems).length === 0) prefillOrderFromLowStock();
     else renderOrderList();
+    renderSavedOrdersList();
+    updateOrderCardTitle();
   }
 }
 
@@ -900,6 +958,11 @@ function initData(){
     if(document.getElementById('viewNewOrder').classList.contains('active')) renderOrderList();
     if(document.getElementById('viewDashboard').classList.contains('active')) renderDashboard();
   }, err => showToast('Error loading stock data: '+err.message, true));
+
+  db.collection('pedidos').orderBy('createdAt','desc').onSnapshot(snap => {
+    pedidosSalvos = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderSavedOrdersList();
+  }, err => showToast('Error loading saved lists: '+err.message, true));
 
   addItemRow();
 }
@@ -1120,7 +1183,7 @@ function renderOrderAddSelect(){
 }
 function addToOrder(saborId){
   if(!saborId) return;
-  if(!(saborId in orderItems)) orderItems[saborId] = 1;
+  if(!(saborId in orderItems)) orderItems[saborId] = 0;
   renderOrderList();
 }
 function removeFromOrder(saborId){
@@ -1132,7 +1195,10 @@ function updateOrderQty(saborId, value){
 }
 function clearOrder(){
   orderItems = {};
+  editingPedidoId = null;
   renderOrderList();
+  updateOrderCardTitle();
+  renderSavedOrdersList();
 }
 function prefillOrderFromLowStock(){
   const stockMap = computeCurrentStock();
@@ -1141,13 +1207,102 @@ function prefillOrderFromLowStock(){
   ativos.forEach(s => {
     const st = stockMap[s.id] || {comprados:0, removidos:0};
     const atual = Math.max(0, st.comprados - st.removidos);
-    if(atual <= 1 && !(s.id in orderItems)){
-      orderItems[s.id] = Math.max(1, (s.estoqueMinimo > 0 ? s.estoqueMinimo*2 : 4) - atual);
+    if(atual <= 2 && !(s.id in orderItems)){
+      orderItems[s.id] = 0;
       added++;
     }
   });
   renderOrderList();
-  showToast(added === 0 ? 'No new low-stock flavours to add.' : `Added ${added} low-stock flavour${added>1?'s':''} to the order.`);
+  showToast(added === 0 ? 'No new low-stock flavours to add.' : `Added ${added} low-stock flavour${added>1?'s':''} to the order. Fill in the quantities.`);
+}
+function updateOrderCardTitle(){
+  const title = document.getElementById('orderCardTitle');
+  const btn = document.getElementById('savePedidoBtn');
+  if(!title || !btn) return;
+  if(editingPedidoId){
+    const p = pedidosSalvos.find(x => x.id === editingPedidoId);
+    const label = p ? new Date(p.createdAt || Date.now()).toLocaleString('en-CA', {dateStyle:'medium', timeStyle:'short'}) : '';
+    title.textContent = '✏️ Editing List — ' + label;
+    btn.textContent = '💾 Update List';
+  } else {
+    title.textContent = '🛒 New Order';
+    btn.textContent = '💾 Save List';
+  }
+}
+function salvarPedido(){
+  if(!db){ showToast('No database connection.', true); return; }
+  const ids = Object.keys(orderItems).filter(id => orderItems[id] > 0);
+  if(ids.length === 0){ showToast('Add quantities to at least one item before saving.', true); return; }
+  const itens = ids.map(id => {
+    const s = sabores.find(x => x.id === id);
+    return {
+      saborId: id,
+      saborNome: s ? s.nome : '(removed flavour)',
+      marca: s ? (s.marca || 'No brand') : 'No brand',
+      qty: orderItems[id]
+    };
+  });
+  const payload = { itens, updatedAt: Date.now() };
+  const promise = editingPedidoId
+    ? db.collection('pedidos').doc(editingPedidoId).update(payload)
+    : db.collection('pedidos').add({...payload, createdAt: Date.now()});
+
+  promise.then((ref) => {
+    if(!editingPedidoId && ref && ref.id) editingPedidoId = ref.id;
+    showToast(editingPedidoId ? 'List saved!' : 'List saved!');
+    updateOrderCardTitle();
+  }).catch(err => showToast('Error saving list: '+err.message, true));
+}
+function abrirPedido(id){
+  const p = pedidosSalvos.find(x => x.id === id);
+  if(!p) return;
+  orderItems = {};
+  (p.itens||[]).forEach(item => { orderItems[item.saborId] = item.qty || 0; });
+  editingPedidoId = id;
+  switchView('viewNewOrder');
+  renderOrderList();
+  updateOrderCardTitle();
+  renderSavedOrdersList();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function excluirPedido(id){
+  const p = pedidosSalvos.find(x => x.id === id);
+  const label = p ? new Date(p.createdAt || Date.now()).toLocaleString('en-CA', {dateStyle:'medium', timeStyle:'short'}) : 'this list';
+  openConfirm('Delete saved list', `Delete the purchase list from "${label}"? This action cannot be undone.`, ()=>{
+    db.collection('pedidos').doc(id).delete()
+      .then(()=>{
+        showToast('List deleted.');
+        if(editingPedidoId === id){ clearOrder(); }
+      })
+      .catch(err => showToast('Error: '+err.message, true));
+  });
+}
+function renderSavedOrdersList(){
+  const wrap = document.getElementById('savedOrdersList');
+  const empty = document.getElementById('savedOrdersEmpty');
+  if(!wrap) return;
+  if(pedidosSalvos.length === 0){ wrap.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  const sorted = [...pedidosSalvos].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  wrap.innerHTML = sorted.map(p => {
+    const label = new Date(p.createdAt || Date.now()).toLocaleString('en-CA', {dateStyle:'medium', timeStyle:'short'});
+    const itens = p.itens || [];
+    const brandCount = new Set(itens.map(i => i.marca || 'No brand')).size;
+    const totalQty = itens.reduce((s,i)=>s+(i.qty||0),0);
+    const editing = p.id === editingPedidoId;
+    return `
+      <div class="saved-order-row${editing?' editing':''}">
+        <div class="saved-order-info">
+          <div class="sorder-label">${escapeHtml(label)}${editing?' (editing)':''}</div>
+          <div class="sorder-meta">${itens.length} flavour${itens.length!==1?'s':''} · ${brandCount} supplier${brandCount!==1?'s':''} · ${totalQty} tubs total</div>
+        </div>
+        <div class="saved-order-actions">
+          <button class="btn btn-ghost btn-sm" onclick="abrirPedido('${p.id}')">Open</button>
+          <button class="btn-icon" onclick="excluirPedido('${p.id}')" title="Delete">🗑</button>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 function renderOrderList(){
   const wrap = document.getElementById('orderGroups');
@@ -1188,7 +1343,7 @@ function renderOrderList(){
             <div class="oname">${escapeHtml(item.nome)}</div>
           </div>
           <div class="order-row-stock">${item.atual}</div>
-          <input type="number" min="0" step="1" value="${item.qty}" onchange="updateOrderQty('${item.id}', this.value)">
+          <input type="number" min="0" step="1" placeholder="0" value="${item.qty ? item.qty : ''}" oninput="updateOrderQty('${item.id}', this.value)">
           <button class="btn-icon" onclick="removeFromOrder('${item.id}')" title="Remove">✕</button>
         </div>
       `).join('')}
@@ -1282,6 +1437,7 @@ function computeCurrentStock(){
     map[s.id] = { nome: s.nome, marca: s.marca, estoqueMinimo: s.estoqueMinimo || 0, comprados: 0, removidos: 0, custoTotal: 0 };
   });
   notas.forEach(n => {
+    if(n.contabilizarEstoque === false) return;
     (n.itens||[]).forEach(i => {
       if(!map[i.saborId]) map[i.saborId] = { nome: i.saborNome, marca: i.marca, estoqueMinimo: 0, comprados: 0, removidos: 0, custoTotal: 0 };
       map[i.saborId].comprados += i.quantidade;
@@ -1403,6 +1559,7 @@ function salvarNota(){
   const localCompra = document.getElementById('fLocalCompra').value;
   const data = document.getElementById('fData').value;
   const valorNota = parseFloat(document.getElementById('fValorNota').value) || 0;
+  const contabilizarEstoque = document.getElementById('fContabilizarEstoque').checked;
   const itens = coletarItens();
 
   if(!localCompra){ showToast('Select the purchase location.', true); return; }
@@ -1416,7 +1573,7 @@ function salvarNota(){
     : getNextPurchaseNumber();
 
   const payload = {
-    localCompra, data, numeroCompra,
+    localCompra, data, numeroCompra, contabilizarEstoque,
     valorNota: valorNota || totalCalculado,
     totalCalculado, totalPotes, itens,
     updatedAt: Date.now()
@@ -1438,6 +1595,7 @@ function resetForm(){
   document.getElementById('fLocalCompra').value = '';
   setDateField('fData', new Date().toISOString().split('T')[0]);
   document.getElementById('fValorNota').value = '';
+  document.getElementById('fContabilizarEstoque').checked = true;
   document.getElementById('itensBody').innerHTML = '';
   document.getElementById('matchIndicator').innerHTML = '';
   addItemRow();
@@ -1458,6 +1616,7 @@ function editarNota(id){
   document.getElementById('fNumeroCompra').value = '#' + String(nota.numeroCompra || 0).padStart(4,'0');
   setDateField('fData', nota.data || '');
   document.getElementById('fValorNota').value = nota.valorNota || '';
+  document.getElementById('fContabilizarEstoque').checked = nota.contabilizarEstoque !== false;
   document.getElementById('itensBody').innerHTML = '';
   (nota.itens||[]).forEach(item => addItemRow(item));
   recalcTotal();
@@ -1484,12 +1643,13 @@ function renderNotasTable(){
     const totalPotes = n.totalPotes || (n.itens||[]).reduce((s,i)=>s+i.quantidade,0);
     const itensResumo = (n.itens||[]).map(i => `${i.saborNome} (${i.quantidade})`).join(', ');
     const local = n.localCompra || n.marcaSorvete || '';
+    const naoContabilizada = n.contabilizarEstoque === false;
     return `
     <tr>
       <td>#${String(n.numeroCompra||0).padStart(4,'0')}</td>
       <td>${fmtDate(n.data)}</td>
       <td>${escapeHtml(local)}</td>
-      <td title="${escapeHtml(itensResumo)}">${(n.itens||[]).length} item(s)</td>
+      <td title="${escapeHtml(itensResumo)}">${(n.itens||[]).length} item(s)${naoContabilizada ? ' <span class="pill" style="background:#F1EDE4; color:var(--choc-soft);" title="These tubs were not added to Stock">Not in Stock</span>' : ''}</td>
       <td>${totalPotes}</td>
       <td>${fmtCAD(n.valorNota || n.totalCalculado)}</td>
       <td style="white-space:nowrap;">
