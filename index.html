@@ -178,6 +178,46 @@
 
   .itens-table input, .itens-table select{padding:8px 9px; font-size:13.5px;}
   .itens-table select{padding-right:30px;}
+
+  /* ---------- FLAVOUR PICKER (button + accordion by supplier) ---------- */
+  .flavour-picker{position:relative;}
+  .flavour-picker select{position:absolute; opacity:0; pointer-events:none; height:0; width:0; padding:0; border:0; margin:0;}
+  .flavour-trigger{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:10px 12px; height:44px; border-radius:10px; border:1.5px solid var(--line); background:#fff;
+    font-size:14px; font-family:'Inter',sans-serif; color:var(--choc); cursor:pointer; text-align:left; transition:border-color .15s;
+  }
+  .flavour-trigger:hover, .flavour-trigger:focus{border-color:var(--strawberry); outline:none;}
+  .flavour-trigger .ft-label{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;}
+  .flavour-trigger .ft-label.placeholder{color:#9a8f83;}
+  .flavour-trigger .ft-chevron{flex:0 0 auto; color:var(--choc-soft); transition:transform .15s;}
+  .itens-table .flavour-trigger{height:38px; padding:8px 9px; font-size:13.5px;}
+
+  .flavour-popover{
+    position:absolute; z-index:220; background:#fff; border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); padding:8px; max-height:320px; overflow-y:auto; display:none; min-width:220px;
+  }
+  .flavour-popover.show{display:block;}
+  .fp-brand-group{border-bottom:1px solid var(--line);}
+  .fp-brand-group:last-child{border-bottom:none;}
+  .fp-brand-header{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:10px 10px; background:transparent; border:none; font-weight:700; font-size:13px;
+    font-family:'Fredoka',sans-serif; color:var(--choc); cursor:pointer; text-align:left; border-radius:8px;
+  }
+  .fp-brand-header:hover{background:#F9F4EA;}
+  .fp-brand-header.active{color:var(--strawberry);}
+  .fp-brand-header .fp-chevron{transition:transform .15s; flex:0 0 auto;}
+  .fp-brand-header.active .fp-chevron{transform:rotate(180deg);}
+  .fp-brand-items{display:none; flex-direction:column; padding:0 4px 6px;}
+  .fp-brand-items.open{display:flex;}
+  .fp-item{
+    text-align:left; background:transparent; border:none; padding:9px 14px; border-radius:8px;
+    font-size:13.5px; color:var(--choc); cursor:pointer;
+  }
+  .fp-item:hover{background:var(--mint-soft); color:var(--mint);}
+  .fp-empty{padding:14px; font-size:13px; color:var(--choc-soft); text-align:center;}
+
   .checkbox-field{margin-top:18px; padding:14px 16px; background:#F9F4EA; border-radius:14px; border:1px solid var(--line);}
   .checkbox-label{display:flex; align-items:center; gap:10px; font-weight:600; font-size:13.5px; cursor:pointer; color:var(--choc);}
   .checkbox-label input[type="checkbox"]{width:19px; height:19px; flex:0 0 auto; accent-color:var(--strawberry); cursor:pointer;}
@@ -415,7 +455,7 @@
         <div class="grid grid-3">
           <div class="field">
             <label>Purchase Location</label>
-            <select id="fLocalCompra">
+            <select id="fLocalCompra" onchange="handleLocationChange()">
               <option value="">Select…</option>
               <option value="Kawartha Dairy">Kawartha Dairy</option>
               <option value="Wholesale Club Hamilton">Wholesale Club Hamilton</option>
@@ -435,6 +475,14 @@
             <label>Purchase #</label>
             <input type="text" id="fNumeroCompra" disabled>
           </div>
+        </div>
+
+        <div class="checkbox-field" id="paymentStatusField" style="display:none;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="fPago" checked>
+            <span>This Golden Horseshoes purchase has been paid</span>
+          </label>
+          <div class="checkbox-hint">Golden Horseshoes runs on a different payment setup — uncheck this if the invoice is still outstanding, and update it later once it's settled.</div>
         </div>
 
         <div class="table-wrap">
@@ -529,9 +577,13 @@
 
         <div class="field" style="max-width:340px;">
           <label>Add a flavour to the order</label>
-          <select id="orderAddSaborSelect" onchange="addToOrder(this.value); this.value='';">
-            <option value="">Select…</option>
-          </select>
+          <div class="flavour-picker" id="orderAddFlavourPicker">
+            <button type="button" class="flavour-trigger">
+              <span class="ft-label placeholder">Select…</span>
+              <svg class="ft-chevron" width="12" height="8" viewBox="0 0 14 9" fill="none"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <select id="orderAddSaborSelect"></select>
+          </div>
         </div>
 
         <div id="orderGroups"></div>
@@ -868,6 +920,16 @@ function showApp(){
 window.onload = function(){
   try { setupDatePickers(); } catch(e){ console.error('Date picker setup failed:', e); }
   try {
+    const orderPicker = document.getElementById('orderAddFlavourPicker');
+    if(orderPicker){
+      initFlavourPicker(orderPicker, {
+        filterFn: s => s.ativo !== false,
+        onSelect: (id) => addToOrder(id),
+        resetAfterSelect: true
+      });
+    }
+  } catch(e){ console.error('Order flavour picker setup failed:', e); }
+  try {
     if(sessionStorage.getItem('cc_estoque_auth') === '1'){ showApp(); }
   } catch(e){ console.error('Auto-login check failed:', e); }
   try {
@@ -885,7 +947,6 @@ function switchView(viewId){
   if(viewId === 'viewDashboard') renderDashboard();
   if(viewId === 'viewSaidas') renderQuickStock();
   if(viewId === 'viewNewOrder'){
-    renderOrderAddSelect();
     if(Object.keys(orderItems).length === 0) prefillOrderFromLowStock();
     else renderOrderList();
     renderSavedOrdersList();
@@ -935,7 +996,6 @@ function initData(){
     renderSaborSelects();
     renderLowStockAlert();
     renderQuickStock();
-    renderOrderAddSelect();
     if(document.getElementById('viewNewOrder').classList.contains('active')) renderOrderList();
     if(document.getElementById('viewDashboard').classList.contains('active')) renderDashboard();
   }, err => showToast('Error loading flavours: '+err.message, true));
@@ -1050,12 +1110,27 @@ function renderSaboresList(){
     </div>
   `).join('');
 }
+function buildSaborOptionsHtml(){
+  const groups = {};
+  sabores.forEach(s => {
+    const key = s.marca || 'No brand';
+    (groups[key] = groups[key] || []).push(s);
+  });
+  const brandOrder = Object.keys(groups).sort();
+  let html = '<option value="">Select…</option>';
+  brandOrder.forEach(brand => {
+    html += `<optgroup label="${escapeHtml(brand)}">`;
+    groups[brand].slice().sort((a,b)=>a.nome.localeCompare(b.nome)).forEach(s => {
+      html += `<option value="${s.id}" data-marca="${escapeHtml(s.marca||'')}" data-nome="${escapeHtml(s.nome)}">${escapeHtml(s.nome)}</option>`;
+    });
+    html += `</optgroup>`;
+  });
+  return html;
+}
 function renderSaborSelects(){
   document.querySelectorAll('.sabor-select').forEach(sel => {
     const currentVal = sel.value;
-    sel.innerHTML = '<option value="">Select…</option>' + sabores.map(s =>
-      `<option value="${s.id}" data-marca="${escapeHtml(s.marca||'')}" data-nome="${escapeHtml(s.nome)}">${escapeHtml(s.nome)}${s.marca? ' ('+escapeHtml(s.marca)+')' : ''}</option>`
-    ).join('');
+    sel.innerHTML = buildSaborOptionsHtml();
     if(currentVal) sel.value = currentVal;
   });
   const filtroSabor = document.getElementById('filtroSabor');
@@ -1171,16 +1246,6 @@ function renderQuickStock(){
 }
 
 /* ================= NEW ORDER ================= */
-function renderOrderAddSelect(){
-  const sel = document.getElementById('orderAddSaborSelect');
-  if(!sel) return;
-  const ativos = sabores.filter(s => s.ativo !== false).slice().sort((a,b)=>a.nome.localeCompare(b.nome));
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">Select…</option>' + ativos.map(s =>
-    `<option value="${s.id}">${escapeHtml(s.nome)}${s.marca?' ('+escapeHtml(s.marca)+')':''}</option>`
-  ).join('');
-  sel.value = cur;
-}
 function addToOrder(saborId){
   if(!saborId) return;
   if(!(saborId in orderItems)) orderItems[saborId] = 0;
@@ -1473,23 +1538,147 @@ function renderLowStockAlert(){
   `;}).join('');
 }
 
+/* ================= FLAVOUR PICKER (button + accordion by supplier) ================= */
+function initFlavourPicker(container, options){
+  options = options || {};
+  const filterFn = options.filterFn || (() => true);
+  const onSelect = options.onSelect || null;
+  const resetAfterSelect = !!options.resetAfterSelect;
+
+  const select = container.querySelector('select');
+  const trigger = container.querySelector('.flavour-trigger');
+  const label = trigger.querySelector('.ft-label');
+  const popover = document.createElement('div');
+  popover.className = 'flavour-popover';
+  document.body.appendChild(popover);
+
+  function renderOptions(){
+    const list = sabores.filter(filterFn);
+    const groups = {};
+    list.forEach(s => { const key = s.marca || 'No brand'; (groups[key] = groups[key] || []).push(s); });
+    const brandOrder = Object.keys(groups).sort();
+    if(brandOrder.length === 0){
+      popover.innerHTML = '<div class="fp-empty">No flavours available.</div>';
+      return;
+    }
+    popover.innerHTML = brandOrder.map(brand => `
+      <div class="fp-brand-group">
+        <button type="button" class="fp-brand-header">
+          <span>${escapeHtml(brand)}</span>
+          <svg class="fp-chevron" width="11" height="7" viewBox="0 0 14 9" fill="none"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="fp-brand-items">
+          ${groups[brand].slice().sort((a,b)=>a.nome.localeCompare(b.nome)).map(s =>
+            `<button type="button" class="fp-item" data-id="${s.id}">${escapeHtml(s.nome)}</button>`
+          ).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    popover.querySelectorAll('.fp-brand-header').forEach(header => {
+      header.onclick = (e) => {
+        e.stopPropagation();
+        const itemsDiv = header.nextElementSibling;
+        const wasOpen = itemsDiv.classList.contains('open');
+        popover.querySelectorAll('.fp-brand-items.open').forEach(el => el.classList.remove('open'));
+        popover.querySelectorAll('.fp-brand-header.active').forEach(el => el.classList.remove('active'));
+        if(!wasOpen){ itemsDiv.classList.add('open'); header.classList.add('active'); }
+      };
+    });
+    popover.querySelectorAll('.fp-item').forEach(itemBtn => {
+      itemBtn.onclick = (e) => {
+        e.stopPropagation();
+        const id = itemBtn.getAttribute('data-id');
+        if(onSelect){
+          onSelect(id);
+        } else {
+          select.value = id;
+          select.dispatchEvent(new Event('change'));
+        }
+        if(resetAfterSelect){
+          label.textContent = 'Select…';
+          label.classList.add('placeholder');
+        } else {
+          label.textContent = itemBtn.textContent;
+          label.classList.remove('placeholder');
+        }
+        popover.classList.remove('show');
+      };
+    });
+  }
+
+  function position(){
+    const rect = trigger.getBoundingClientRect();
+    popover.style.top = (window.scrollY + rect.bottom + 6) + 'px';
+    popover.style.left = (window.scrollX + rect.left) + 'px';
+    popover.style.minWidth = Math.max(rect.width, 200) + 'px';
+  }
+
+  popover.addEventListener('click', e => e.stopPropagation());
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isShown = popover.classList.contains('show');
+    document.querySelectorAll('.flavour-popover.show').forEach(p => { if(p !== popover) p.classList.remove('show'); });
+    if(!isShown){
+      renderOptions();
+      position();
+      popover.classList.add('show');
+    } else {
+      popover.classList.remove('show');
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if(popover.classList.contains('show') && !popover.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)){
+      popover.classList.remove('show');
+    }
+  });
+  window.addEventListener('resize', () => { if(popover.classList.contains('show')) position(); });
+  window.addEventListener('scroll', () => { if(popover.classList.contains('show')) position(); }, true);
+
+  container._setFlavourValue = function(id){
+    const s = sabores.find(x => x.id === id);
+    if(select) select.value = id || '';
+    if(s){ label.textContent = s.nome; label.classList.remove('placeholder'); }
+    else { label.textContent = 'Select…'; label.classList.add('placeholder'); }
+  };
+  container._destroyPopover = function(){ popover.remove(); };
+}
+
 /* ================= ITEMS (NEW INVOICE) ================= */
 function addItemRow(item){
   const tbody = document.getElementById('itensBody');
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><select class="sabor-select" onchange="recalcRow(this)"></select></td>
+    <td>
+      <div class="flavour-picker">
+        <button type="button" class="flavour-trigger">
+          <span class="ft-label placeholder">Select…</span>
+          <svg class="ft-chevron" width="12" height="8" viewBox="0 0 14 9" fill="none"><path d="M1 1l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <select class="sabor-select" onchange="recalcRow(this)"></select>
+      </div>
+    </td>
     <td><input type="number" min="0" step="1" class="qtd-input" value="${item?item.quantidade:1}" oninput="recalcRow(this)"></td>
     <td><input type="number" min="0" step="0.01" class="preco-input" value="${item?item.precoUnitario:''}" placeholder="0.00" oninput="recalcRow(this)"></td>
     <td class="subtotal-cell">CAD$ 0.00</td>
-    <td><button class="remove-row" onclick="this.closest('tr').remove(); recalcTotal();">✕</button></td>
+    <td><button class="remove-row" onclick="removeItemRow(this)">✕</button></td>
   `;
   tbody.appendChild(tr);
   renderSaborSelects();
+  const pickerContainer = tr.querySelector('.flavour-picker');
+  initFlavourPicker(pickerContainer);
   if(item){
     tr.querySelector('.sabor-select').value = item.saborId || '';
+    pickerContainer._setFlavourValue(item.saborId || '');
   }
   recalcRow(tr.querySelector('.qtd-input'));
+}
+function removeItemRow(btn){
+  const tr = btn.closest('tr');
+  const picker = tr.querySelector('.flavour-picker');
+  if(picker && picker._destroyPopover) picker._destroyPopover();
+  tr.remove();
+  recalcTotal();
 }
 function recalcRow(el){
   const tr = el.closest('tr');
@@ -1554,6 +1743,12 @@ function refreshPurchaseNumberDisplay(){
     el.value = '#' + String(getNextPurchaseNumber()).padStart(4,'0');
   }
 }
+const GOLDEN_HORSESHOES = 'Golden Horseshoes';
+function handleLocationChange(){
+  const local = document.getElementById('fLocalCompra').value;
+  const field = document.getElementById('paymentStatusField');
+  field.style.display = (local === GOLDEN_HORSESHOES) ? 'block' : 'none';
+}
 function salvarNota(){
   if(!db){ showToast('No database connection.', true); return; }
   const localCompra = document.getElementById('fLocalCompra').value;
@@ -1578,6 +1773,11 @@ function salvarNota(){
     totalCalculado, totalPotes, itens,
     updatedAt: Date.now()
   };
+  if(localCompra === GOLDEN_HORSESHOES){
+    payload.pago = document.getElementById('fPago').checked;
+  } else {
+    payload.pago = null;
+  }
 
   const promise = editingNotaId
     ? db.collection('notas').doc(editingNotaId).update(payload)
@@ -1596,6 +1796,8 @@ function resetForm(){
   setDateField('fData', new Date().toISOString().split('T')[0]);
   document.getElementById('fValorNota').value = '';
   document.getElementById('fContabilizarEstoque').checked = true;
+  document.getElementById('fPago').checked = true;
+  handleLocationChange();
   document.getElementById('itensBody').innerHTML = '';
   document.getElementById('matchIndicator').innerHTML = '';
   addItemRow();
@@ -1617,6 +1819,8 @@ function editarNota(id){
   setDateField('fData', nota.data || '');
   document.getElementById('fValorNota').value = nota.valorNota || '';
   document.getElementById('fContabilizarEstoque').checked = nota.contabilizarEstoque !== false;
+  document.getElementById('fPago').checked = nota.pago !== false;
+  handleLocationChange();
   document.getElementById('itensBody').innerHTML = '';
   (nota.itens||[]).forEach(item => addItemRow(item));
   recalcTotal();
@@ -1644,11 +1848,18 @@ function renderNotasTable(){
     const itensResumo = (n.itens||[]).map(i => `${i.saborNome} (${i.quantidade})`).join(', ');
     const local = n.localCompra || n.marcaSorvete || '';
     const naoContabilizada = n.contabilizarEstoque === false;
+    let paymentBadge = '';
+    if(local === GOLDEN_HORSESHOES){
+      const pago = n.pago !== false;
+      paymentBadge = pago
+        ? ' <span class="pill" style="background:var(--mint-soft); color:var(--mint);">Paid</span>'
+        : ' <span class="pill" style="background:#FDE2E2; color:var(--danger);">Unpaid</span>';
+    }
     return `
     <tr>
       <td>#${String(n.numeroCompra||0).padStart(4,'0')}</td>
       <td>${fmtDate(n.data)}</td>
-      <td>${escapeHtml(local)}</td>
+      <td>${escapeHtml(local)}${paymentBadge}</td>
       <td title="${escapeHtml(itensResumo)}">${(n.itens||[]).length} item(s)${naoContabilizada ? ' <span class="pill" style="background:#F1EDE4; color:var(--choc-soft);" title="These tubs were not added to Stock">Not in Stock</span>' : ''}</td>
       <td>${totalPotes}</td>
       <td>${fmtCAD(n.valorNota || n.totalCalculado)}</td>
